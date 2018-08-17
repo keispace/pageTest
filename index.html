@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <title>간단한 지도 표시하기</title>
+    <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?clientId=vOND_9b45TsfLKC1uB9K&submodules=geocoder"></script>
+
+<!--script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?clientId=OW4FRUSoDxIbEefRbYO4&submodules=geocoder"></script-->
+
+</head>
+<body>
+<div id="map" style="width:100%;height:400px;"></div>
+<hr>
+주소검색<input type="text" id="address"/>
+<input type="button" id="searchAddr" value="주소검색" onclick="searchAddress()"/>
+지역검색<input type="text" id="area"/>
+<input type="button" id="searchArea" value="지역검색" onclick="searchArea()"/>
+
+<script>
+    var jsonData = {
+        "hospital" : [
+            {
+                "name" : "병원1",
+                "locX" : 37.3595704, 
+                "locY" : 127.105399,
+                "director" : {
+                    "name" : "홍길동",
+                    "comment" : "홍원장 코멘트"
+                },
+                "eqps" : {
+                    "name" : "eqp1", 
+                    "option" : "opt1,opt2 ...", 
+                    "comment" : "eqp1 comment"
+                }
+            },
+            {
+                "name" : "병원2",
+                "locX" : 37.3605704,
+                "locY" : 127.106399,
+                "director" : {
+                    "name" : "임꺽정",
+                    "comment" : "임원장 코멘트"
+                },
+                "eqps" : {
+                    "name" : "eqp2", 
+                    "option" : "opt3,opt4 ...", 
+                    "comment" : "eqp2 comment"
+                }
+            }
+        ]
+    };
+</script>
+
+<script>
+//지도 옵션
+var mapOptions = {
+    center: new naver.maps.LatLng(jsonData.hospital[0].locX,jsonData.hospital[0].locY),
+    zoom: 10,
+    mapTypeControl: true
+};
+//지도api 객체 선언
+var map = new naver.maps.Map('map', mapOptions);
+//마커 저장배열
+var markers = []
+//인포창 저장배열
+var infoWindows = []
+//데이터만큼 반복해서 마커,인포창 생성해서 배열 저장
+for (i=0; i< jsonData.hospital.length ; i++){
+    var marker = new naver.maps.Marker({
+        position: new naver.maps.LatLng(jsonData.hospital[i].locX,jsonData.hospital[i].locY),
+        map: map
+    });
+    var contentStri = jsonData.hospital[i].name
+    var infoWindow = new naver.maps.InfoWindow({
+        content: contentStri,
+        maxWidth: 200,
+        backgroundColor: "#eee",
+        borderColor: "#2db400",
+        borderWidth: 5,
+        anchorSize: new naver.maps.Size(30, 30),
+        anchorSkew: true,
+        anchorColor: "#eee",
+        pixelOffset: new naver.maps.Point(20, -20)
+    });
+    markers.push(marker);
+    infoWindows.push(infoWindow);
+};
+//기본 이벤트(맵 영역 지정, 마커 표시)
+naver.maps.Event.addListener(map, 'idle', function() {
+    updateMarkers(map, markers);
+});
+//화면 안에 있는 마커들 표시
+function updateMarkers(map, markers) {
+    var mapBounds = map.getBounds();
+    var marker, position;
+    for (var i = 0, il=markers.length; i < il; i++) {
+        marker = markers[i]
+        position = marker.getPosition();
+        if (mapBounds.hasLatLng(position)) {
+            showMarker(map, marker);
+        } else {
+            hideMarker(map, marker);
+        }
+    }
+}
+//마커 표시
+function showMarker(map, marker) {
+    if (marker.setMap()) return;
+    marker.setMap(map);
+}
+//마커 숨기기
+function hideMarker(map, marker) {
+    if (!marker.setMap()) return;
+    marker.setMap(null);
+}
+
+//마커 클릭 이벤트 : 인포창 열기
+function getClickHandler(seq) {
+    return function(e) {
+        var marker = markers[seq],
+            infoWindow = infoWindows[seq];
+
+        if (infoWindow.getMap()) {
+            infoWindow.close();
+        } else {
+            infoWindow.open(map, marker);
+        }
+    }
+}
+//주소검색 버튼 누를때 이벤트
+function searchAddress(){
+    var addr = document.getElementById("address").value;
+    if (addr)
+      searchAddressToCoordinate(addr);
+}
+
+// 주소검색결과 확인 및 인포창 출
+function searchAddressToCoordinate(address) {
+    naver.maps.Service.geocode({
+        address: address
+    }, function(status, response) {
+        if (status === naver.maps.Service.Status.ERROR) {
+            return alert('Something Wrong!');
+        }
+
+        var item = response.result.items[0],
+            addrType = item.isRoadAddress ? '[도로명 주소]' : '[지번 주소]',
+            point = new naver.maps.Point(item.point.x, item.point.y);
+        console.log(item)
+        infoWindow.setContent([
+                '<div style="padding:10px;min-width:200px;line-height:150%;">',
+                '<h4 style="margin-top:5px;">검색 주소 : '+ response.result.userquery +'</h4><br />',
+                addrType +' '+ item.address +'<br />',
+                '</div>'
+            ].join('\n'));
+        map.setCenter(point);
+        infoWindow.open(map, point);
+    });
+}
+
+//지역검색 버튼 누를때 이벤트
+function searchArea(){
+    var area = document.getElementById("area").value;
+    //api콜 https://openapi.naver.com/v1/search/local.json?query=검색어&display=10
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+         if (this.readyState == 4 && this.status == 200) {
+             alert(this.responseText);
+         }
+    };
+    //중요한 정보가 있기 때문에 클라이언트사이드에서는 쓸 수 없다!!
+    xhttp.open("GET", "https://openapi.naver.com/v1/search/local.json?query=병원&display=10", true);
+    xhttp.setRequestHeader("Content-type", "application/json");
+    xhttp.setRequestHeader("X-Naver-Client-Id", "");
+    xhttp.setRequestHeader("X-Naver-Client-Secret", "");
+    xhttp.send();
+}
+
+//마커에 이벤트 연결
+for (var i=0, ii=markers.length; i<ii; i++) {
+    naver.maps.Event.addListener(markers[i], 'click', getClickHandler(i));
+}
+</script>
+
+</body>
+</html>
