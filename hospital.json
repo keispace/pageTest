@@ -1,0 +1,34 @@
+data = {
+        "hospital" : [
+            {
+                "name" : "병원1",
+                "address":"",
+                "locX" : 37.3595704, 
+                "locY" : 127.105399,
+                "director" : {
+                    "name" : "홍길동",
+                    "comment" : "홍원장 코멘트"
+                },
+                "eqps" : {
+                    "name" : "eqp1", 
+                    "option" : "opt1,opt2 ...", 
+                    "comment" : "eqp1 comment"
+                }
+            },
+            {
+                "name" : "병원2",
+                "address":"",
+                "locX" : 37.3605704,
+                "locY" : 127.106399,
+                "director" : {
+                    "name" : "임꺽정",
+                    "comment" : "임원장 코멘트"
+                },
+                "eqps" : {
+                    "name" : "eqp2", 
+                    "option" : "opt3,opt4 ...", 
+                    "comment" : "eqp2 comment"
+                }
+            }
+        ]
+    }
